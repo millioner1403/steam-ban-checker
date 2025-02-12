@@ -34,17 +34,27 @@ def get_bans():
             return jsonify({"error": "Failed to fetch data from Steam API"}), 500
 
         # Извлекаем данные из ответов
-        bans_data = bans_response.json()
-        summaries_data = summaries_response.json()
+        bans_data = bans_response.json().get("players", [{}])[0]
+        summaries_data = summaries_response.json().get("response", {}).get("players", [{}])[0]
 
-        # Возвращаем данные без изменений
-        return jsonify({
-            "bans_data": bans_data,
-            "summaries_data": summaries_data
-        })
+        # Формируем ответ с нужными данными
+        result = {
+            "avatarfull": summaries_data.get("avatarfull"),
+            "personaname": summaries_data.get("personaname"),
+            "SteamId": summaries_data.get("SteamId"),
+            "profileurl": summaries_data.get("profileurl"),
+            "VACBanned": bans_data.get("VACBanned"),
+            "NumberOfVACBans": bans_data.get("NumberOfVACBans"),
+            "NumberOfGameBans": bans_data.get("NumberOfGameBans"),
+            "CommunityBanned": bans_data.get("CommunityBanned"),
+            "EconomyBan": bans_data.get("EconomyBan"),
+            "DaysSinceLastBan": bans_data.get("DaysSinceLastBan")
+        }
+
+        return jsonify(result)
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000
+    app.run(host='0.0.0.0', port=5000)
