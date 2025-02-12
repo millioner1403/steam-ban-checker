@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
-import os  # Для работы с переменными окружения
-
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,27 +34,17 @@ def get_bans():
             return jsonify({"error": "Failed to fetch data from Steam API"}), 500
 
         # Извлекаем данные из ответов
-        bans_data = bans_response.json().get("players", [{}])[0]
-        summaries_data = summaries_response.json().get("response", {}).get("players", [{}])[0]
+        bans_data = bans_response.json()
+        summaries_data = summaries_response.json()
 
-        # Формируем ответ в нужной последовательности
-        result = {
-            "Avatar": summaries_data.get("avatarfull"),
-            "Name": summaries_data.get("personaname"),
-            "Link to Profile": summaries_data.get("profileurl"),
-            "SteamID": steam_id,
-            "VAC Bans": bans_data.get("VACBanned"),
-            "Number Of VAC Bans": bans_data.get("NumberOfVACBans"),
-            "Number Of Game Bans": bans_data.get("NumberOfGameBans", 0),  # Может отсутствовать
-            "Days Since Last Ban": bans_data.get("DaysSinceLastBan"),
-            "Community Banned": bans_data.get("CommunityBanned"),
-            "Economy Ban": bans_data.get("EconomyBan"),
-        }
-
-        return jsonify(result)
-
+        # Возвращаем данные без изменений
+        return jsonify({
+            "bans_data": bans_data,
+            "summaries_data": summaries_data
+        })
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000
