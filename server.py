@@ -1,7 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import requests
-import os  # Для работы с переменными окружения
-
+import os
+import json
+import threading
+import time
+from collections import OrderedDict
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,7 +19,11 @@ def get_bans():
     # Получаем Steam ID из параметров запроса
     steam_id = request.args.get('steam_id')
     if not steam_id:
-        return jsonify({"error": "Steam ID is required"}), 400
+        return app.response_class(
+            response=json.dumps({"error": "Steam ID is required"}, ensure_ascii=False),
+            status=400,
+            mimetype='application/json'
+        )
 
     # Формируем запросы к Steam API
     bans_url = "https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/"
@@ -32,30 +39,56 @@ def get_bans():
 
         # Проверяем, что оба запроса успешны
         if bans_response.status_code != 200 or summaries_response.status_code != 200:
-            return jsonify({"error": "Failed to fetch data from Steam API"}), 500
+            return app.response_class(
+                response=json.dumps({"error": "Failed to fetch data from Steam API"}, ensure_ascii=False),
+                status=500,
+                mimetype='application/json'
+            )
 
         # Извлекаем данные из ответов
         bans_data = bans_response.json().get("players", [{}])[0]
         summaries_data = summaries_response.json().get("response", {}).get("players", [{}])[0]
 
-        # Формируем ответ в нужной последовательности
-        result = {
-            "Avatar": summaries_data.get("avatarfull"),
-            "Name": summaries_data.get("personaname"),
-            "Link to Profile": summaries_data.get("profileurl"),
-            "SteamID": steam_id,
-            "VAC Bans": bans_data.get("VACBanned"),
-            "Number Of VAC Bans": bans_data.get("NumberOfVACBans"),
-            "Number Of Game Bans": bans_data.get("NumberOfGameBans", 0),  # Может отсутствовать
-            "Days Since Last Ban": bans_data.get("DaysSinceLastBan"),
-            "Community Banned": bans_data.get("CommunityBanned"),
-            "Economy Ban": bans_data.get("EconomyBan"),
-        }
+        # Формируем ответ с нужными данными в правильной последовательности
+        result = OrderedDict([
+            ("avatarfull", summaries_data.get("avatarfull")),
+            ("personaname", summaries_data.get("personaname")),
+            ("SteamId", summaries_data.get("steamid")),
+            ("profileurl", summaries_data.get("profileurl")),
+            ("VACBanned", bans_data.get("VACBanned")),
+            ("NumberOfVACBans", bans_data.get("NumberOfVACBans")),
+            ("NumberOfGameBans", bans_data.get("NumberOfGameBans")),
+            ("CommunityBanned", bans_data.get("CommunityBanned")),
+            ("EconomyBan", bans_data.get("EconomyBan")),
+            ("DaysSinceLastBan", bans_data.get("DaysSinceLastBan"))
+        ])
 
-        return jsonify(result)
-
+        return app.response_class(
+            response=json.dumps(result, ensure_ascii=False),
+            status=200,
+            mimetype='application/json'
+        )
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return app.response_class(
+            response=json.dumps({"error": str(e)}, ensure_ascii=False),
+            status=500,
+            mimetype='application/json'
+        )
+
+# Фоновый поток для поддержания активности сервера
+def keep_awake():
+    while True:
+        try:
+            response = requests.get("http://127.0.0.1:5000/")
+            print(f"Pinged server, status code: {response.status_code}")
+        except Exception as e:
+            print(f"Error pinging server: {e}")
+        time.sleep(300)  # 5 минут
+
+# Запускаем поток
+thread = threading.Thread(target=keep_awake, daemon=True)
+thread.start()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
