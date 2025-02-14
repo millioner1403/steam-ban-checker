@@ -1,10 +1,13 @@
 from flask import Flask, request
 import requests
 import os
+<<<<<<< HEAD
 import json
 import threading
 import time
 from collections import OrderedDict
+=======
+>>>>>>> 4fe060a902a48167371574f1bd2cfce60c4d5cb5
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -49,6 +52,7 @@ def get_bans():
         bans_data = bans_response.json().get("players", [{}])[0]
         summaries_data = summaries_response.json().get("response", {}).get("players", [{}])[0]
 
+<<<<<<< HEAD
         # Формируем ответ с нужными данными в правильной последовательности
         result = OrderedDict([
             ("avatarfull", summaries_data.get("avatarfull")),
@@ -68,6 +72,23 @@ def get_bans():
             status=200,
             mimetype='application/json'
         )
+=======
+        # Формируем ответ с нужными данными
+        result = {
+            "avatarfull": summaries_data.get("avatarfull"),
+            "personaname": summaries_data.get("personaname"),
+            "SteamId": summaries_data.get("SteamId"),
+            "profileurl": summaries_data.get("profileurl"),
+            "VACBanned": bans_data.get("VACBanned"),
+            "NumberOfVACBans": bans_data.get("NumberOfVACBans"),
+            "NumberOfGameBans": bans_data.get("NumberOfGameBans"),
+            "CommunityBanned": bans_data.get("CommunityBanned"),
+            "EconomyBan": bans_data.get("EconomyBan"),
+            "DaysSinceLastBan": bans_data.get("DaysSinceLastBan")
+        }
+
+        return jsonify(result)
+>>>>>>> 4fe060a902a48167371574f1bd2cfce60c4d5cb5
     
     except Exception as e:
         return app.response_class(
