@@ -2,8 +2,6 @@ from flask import Flask, request
 import requests
 import os
 import json
-import threading
-import time
 from collections import OrderedDict
 from dotenv import load_dotenv
 
@@ -75,20 +73,6 @@ def get_bans():
             status=500,
             mimetype='application/json'
         )
-
-# Фоновый поток для поддержания активности сервера
-def keep_awake():
-    while True:
-        try:
-            response = requests.get("http://127.0.0.1:5000/")
-            print(f"Pinged server, status code: {response.status_code}")
-        except Exception as e:
-            print(f"Error pinging server: {e}")
-        time.sleep(300)  # 5 минут
-
-# Запускаем поток
-thread = threading.Thread(target=keep_awake, daemon=True)
-thread.start()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
